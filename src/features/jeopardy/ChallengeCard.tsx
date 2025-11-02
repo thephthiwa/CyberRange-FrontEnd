@@ -1,4 +1,6 @@
-export default function ChallengeCard({ title }: { title: string }) {
+type ChallengeCardProps = { title: string; key?: string | number };
+
+export default function ChallengeCard({ title }: ChallengeCardProps) {
   return (
     <button className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-left hover:bg-white/10">
       <div className="text-sm">{title} pts</div>

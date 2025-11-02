@@ -8,7 +8,14 @@
   </head>
   <body>
     <header class="app-header">
-      <h1>CyberRange Control Center</h1>
+      <div class="app-header__top">
+        <h1>CyberRange Control Center</h1>
+        <div class="persona-switch" role="group" aria-label="เลือกมุมมองผู้ใช้">
+          <span class="persona-switch__label">จำลองผู้ใช้:</span>
+          <button data-persona="admin" class="persona-button active">Admin</button>
+          <button data-persona="competitor" class="persona-button">ผู้เข้าแข่งขัน</button>
+        </div>
+      </div>
       <nav class="app-nav">
         <button data-route="admin" class="nav-button active">Admin Console</button>
         <button data-route="competition" class="nav-button">ระบบแข่ง</button>

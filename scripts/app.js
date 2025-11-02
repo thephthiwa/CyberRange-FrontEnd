@@ -1,4 +1,5 @@
 const state = {
+  userRole: 'admin',
   mode: 'jeopardy',
   teams: [
     { name: 'Red Falcon', total: 4520, attack: 1300, defense: 1800, service: 1420 },
@@ -212,6 +213,45 @@ const modeDescriptions = {
   },
 };
 
+const personaProfiles = {
+  admin: {
+    label: 'Admin',
+    badge: 'มุมมองผู้ดูแลระบบ',
+    adminHero: {
+      title: 'Admin Operations Console',
+      message:
+        'กำหนดกลยุทธ์การแข่งขัน กำกับเครื่องเสมือน และดูภาพรวมคะแนนทั้งหมดเพื่อให้ประสบการณ์การแข่งราบรื่น',
+      actions: {
+        primary: 'กระจายประกาศล่าสุด',
+        secondary: 'เปิดบันทึกเหตุการณ์',
+      },
+    },
+    competitionHero: {
+      title: 'การแข่งขันสด - มุมมองผู้ดูแล',
+      message: 'ติดตามคะแนนแบบเรียลไทม์และประกาศแจ้งเตือนไปยังทุกทีมได้ทันที',
+    },
+    practiceBadge: 'กำลังดูข้อมูลการฝึกของทุกทีม',
+  },
+  competitor: {
+    label: 'ผู้เข้าแข่งขัน',
+    badge: 'มุมมองผู้เข้าแข่งขัน',
+    adminHero: {
+      title: 'Admin Console (จำลอง)',
+      message:
+        'ในฐานะผู้เข้าแข่งขัน คุณสามารถตรวจสอบสถานะการแข่งขันและดูคะแนนรวม แต่ไม่สามารถสั่งการระบบได้',
+      actions: {
+        primary: 'ขอสิทธิ์การเข้าถึง',
+        secondary: 'ดูคู่มือการแข่งขัน',
+      },
+    },
+    competitionHero: {
+      title: 'การแข่งขันสด - มุมมองทีม',
+      message: 'ติดตามตำแหน่งทีมคุณบนกระดานคะแนนและดูคำแนะนำที่เกี่ยวข้องกับโหมดปัจจุบัน',
+    },
+    practiceBadge: 'ซิงก์ความคืบหน้าส่วนตัวของทีมคุณ',
+  },
+};
+
 const routes = {
   admin: renderAdmin,
   competition: renderCompetition,
@@ -220,6 +260,8 @@ const routes = {
 
 const appRoot = document.getElementById('app');
 const navButtons = document.querySelectorAll('.nav-button');
+const personaButtons = document.querySelectorAll('.persona-button');
+let currentRoute = 'admin';
 
 navButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -228,179 +270,493 @@ navButtons.forEach((button) => {
   });
 });
 
+personaButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const { persona } = button.dataset;
+    if (!persona || state.userRole === persona) return;
+    state.userRole = persona;
+    personaButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.persona === persona));
+    renderToast(`สลับเป็นมุมมอง${personaProfiles[persona].label}`);
+    routes[currentRoute]();
+  });
+});
+
 function navigate(route) {
   if (!routes[route]) return;
   navButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.route === route));
+  currentRoute = route;
   routes[route]();
 }
 
 function renderAdmin() {
+  const persona = personaProfiles[state.userRole];
+  const isAdmin = state.userRole === 'admin';
+  const totalScore = state.teams.reduce((sum, team) => sum + team.total, 0);
+  const onlineVMs = state.vms.filter((vm) => vm.online).length;
+  const mode = modeDescriptions[state.mode];
+
+  const operationsFeed = [
+    { time: '13:05', event: 'อัปเดตคะแนนรอบล่าสุด', detail: 'ระบบดึงข้อมูล Jeopardy flag +180 แต้ม' },
+    { time: '12:52', event: 'ตรวจสอบ VM Attack Simulator', detail: 'CPU พุ่งสูงสุด 82% ระหว่างรันสคริปต์' },
+    { time: '12:40', event: 'แจ้งเตือน Service Down', detail: 'ทีม Blue Hydra แจ้งปัญหาบริการ web03 ล่ม' },
+  ];
+
+  const playbook = [
+    'ยืนยันสถานะ VM ที่ออฟไลน์ก่อนเริ่มรอบใหม่',
+    'กระจายประกาศเกี่ยวกับ scope การโจมตีเพิ่มเติม',
+    'ตรวจสอบทราฟฟิกผิดปกติใน Splunk dashboard',
+  ];
+
   appRoot.innerHTML = `
-    <section class="view-container">
-      <section class="section">
-        <div class="section-header">
-          <h2>ภาพรวมคะแนนรวม</h2>
-          <span>อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}</span>
-        </div>
-        <div class="summary-grid">
-          ${state.teams
-            .map(
-              (team) => `
-                <article class="summary-card">
-                  <h3>${team.name}</h3>
-                  <div class="value">${team.total.toLocaleString('th-TH')}</div>
-                  <span class="badge">Attack: ${team.attack.toLocaleString('th-TH')}</span>
-                  <span class="badge">Defense: ${team.defense.toLocaleString('th-TH')}</span>
-                  <span class="badge">Service: ${team.service.toLocaleString('th-TH')}</span>
-                </article>
-              `
-            )
-            .join('')}
-        </div>
-      </section>
+    <section class="admin-dashboard">
+      <div class="admin-main">
+        <section class="section command-hero">
+          <div class="command-hero__copy">
+            <span class="persona-pill">${persona.badge}</span>
+            <h2>${persona.adminHero.title}</h2>
+            <p>${persona.adminHero.message}</p>
+            <div class="command-hero__actions">
+              <button class="button primary ${!isAdmin ? 'disabled' : ''}" data-action="broadcast">
+                ${persona.adminHero.actions.primary}
+              </button>
+              <button class="button ghost" data-action="timeline">${persona.adminHero.actions.secondary}</button>
+            </div>
+          </div>
+          <div class="command-hero__stats">
+            <article class="stat-card">
+              <span class="stat-card__label">คะแนนรวมสะสม</span>
+              <strong class="stat-card__value">${totalScore.toLocaleString('th-TH')}</strong>
+              <span class="stat-card__meta">รวมทุกทีมในระบบ</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">ทีมที่เข้าร่วม</span>
+              <strong class="stat-card__value">${state.teams.length} ทีม</strong>
+              <span class="stat-card__meta">อัปเดต ${new Date().toLocaleTimeString('th-TH')}</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">VM ออนไลน์</span>
+              <strong class="stat-card__value">${onlineVMs}/${state.vms.length}</strong>
+              <span class="stat-card__meta">พร้อมรับคำสั่งทันที</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">โหมดปัจจุบัน</span>
+              <strong class="stat-card__value">${mode.name}</strong>
+              <span class="stat-card__meta">${mode.focus[0]}</span>
+            </article>
+          </div>
+        </section>
 
-      <section class="section">
-        <div class="section-header">
-          <h2>โหมดการแข่งขัน</h2>
-          <span>เลือกรูปแบบการแข่งขันที่ต้องการ</span>
-        </div>
-        <div class="mode-selector">
-          <label for="mode-select">โหมด:</label>
-          <select id="mode-select">
-            <option value="jeopardy" ${state.mode === 'jeopardy' ? 'selected' : ''}>Jeopardy</option>
-            <option value="attack-defense" ${state.mode === 'attack-defense' ? 'selected' : ''}>Attack / Defense</option>
-            <option value="koth" ${state.mode === 'koth' ? 'selected' : ''}>KoTH</option>
-          </select>
-        </div>
-      </section>
+        <section class="section admin-scoreboard">
+          <div class="section-header">
+            <h2>ภาพรวมคะแนนต่อทีม</h2>
+            <span>${isAdmin ? 'สามารถ drill down เพื่อดูรายละเอียดเพิ่มเติม' : 'มุมมองอ่านอย่างเดียวสำหรับผู้เข้าแข่งขัน'}</span>
+          </div>
+          <div class="summary-grid">
+            ${state.teams
+              .map(
+                (team) => `
+                  <article class="summary-card">
+                    <h3>${team.name}</h3>
+                    <div class="value">${team.total.toLocaleString('th-TH')}</div>
+                    <span class="badge">Attack: ${team.attack.toLocaleString('th-TH')}</span>
+                    <span class="badge">Defense: ${team.defense.toLocaleString('th-TH')}</span>
+                    <span class="badge">Service: ${team.service.toLocaleString('th-TH')}</span>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
 
-      <section class="section">
-        <div class="section-header">
-          <h2>ควบคุม VM ทั้งหมด</h2>
-          <span>ตรวจสอบสถานะและสั่งการแบบรวดเร็ว</span>
-        </div>
-        <div class="vm-grid">
-          ${state.vms
-            .map(
-              (vm) => `
-                <article class="vm-card">
-                  <div>
-                    <h3>${vm.name}</h3>
-                    <p>ID: ${vm.id}</p>
-                  </div>
-                  <div class="status-indicator ${vm.online ? 'online' : ''}">
-                    ${vm.online ? 'ออนไลน์' : 'ออฟไลน์'}
-                  </div>
-                  <div class="vm-metrics">
-                    <span>CPU: ${vm.cpu}%</span>
-                    <span> | RAM: ${vm.memory}%</span>
-                  </div>
-                  <div class="vm-actions">
-                    <button class="button" data-action="start" data-vm="${vm.id}">Start</button>
-                    <button class="button" data-action="restart" data-vm="${vm.id}">Restart</button>
-                    <button class="button danger" data-action="shutdown" data-vm="${vm.id}">Shutdown</button>
-                  </div>
-                </article>
-              `
-            )
-            .join('')}
-        </div>
-      </section>
+        <section class="section admin-mode-control">
+          <div class="section-header">
+            <h2>โหมดการแข่งขัน</h2>
+            <span>${
+              isAdmin
+                ? 'เลือกโหมดเพื่อสลับประสบการณ์การแข่งแบบเรียลไทม์'
+                : 'มุมมองจำลอง ไม่สามารถสลับโหมดได้'
+            }</span>
+          </div>
+          <div class="mode-detail">
+            <div class="mode-detail__copy">
+              <h3>${mode.name}</h3>
+              <p>${mode.summary}</p>
+              <div class="mode-focus">
+                ${mode.focus.map((item) => `<span class="chip">${item}</span>`).join('')}
+              </div>
+            </div>
+            <div class="mode-switcher">
+              <label for="mode-select">เลือกโหมด</label>
+              <select id="mode-select" ${isAdmin ? '' : 'disabled'}>
+                <option value="jeopardy" ${state.mode === 'jeopardy' ? 'selected' : ''}>Jeopardy</option>
+                <option value="attack-defense" ${state.mode === 'attack-defense' ? 'selected' : ''}>Attack / Defense</option>
+                <option value="koth" ${state.mode === 'koth' ? 'selected' : ''}>KoTH</option>
+              </select>
+              ${
+                isAdmin
+                  ? '<span class="helper-text">การสลับจะอัปเดตทุกหน้าจอทันที</span>'
+                  : '<span class="helper-text">ต้องมีสิทธิ์ผู้ดูแลจึงจะสลับได้</span>'
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="section admin-vms">
+          <div class="section-header">
+            <h2>ควบคุม VM</h2>
+            <span>${
+              isAdmin
+                ? 'สั่งงาน VM เพื่อรับมือเหตุการณ์และปรับแต่งสภาพแวดล้อม'
+                : 'ดูสถานะ VM ได้เท่านั้นในมุมมองผู้เข้าแข่งขัน'
+            }</span>
+          </div>
+          <div class="vm-grid">
+            ${state.vms
+              .map(
+                (vm) => `
+                  <article class="vm-card">
+                    <div>
+                      <h3>${vm.name}</h3>
+                      <p>ID: ${vm.id}</p>
+                    </div>
+                    <div class="status-indicator ${vm.online ? 'online' : ''}">
+                      ${vm.online ? 'ออนไลน์' : 'ออฟไลน์'}
+                    </div>
+                    <div class="vm-metrics">
+                      <span>CPU: ${vm.cpu}%</span>
+                      <span> | RAM: ${vm.memory}%</span>
+                    </div>
+                    <div class="vm-actions">
+                      <button class="button ${!isAdmin ? 'disabled' : ''}" data-action="start" data-vm="${
+                        vm.id
+                      }" ${isAdmin ? '' : 'disabled'}>Start</button>
+                      <button class="button ${!isAdmin ? 'disabled' : ''}" data-action="restart" data-vm="${
+                        vm.id
+                      }" ${isAdmin ? '' : 'disabled'}>Restart</button>
+                      <button class="button danger ${!isAdmin ? 'disabled' : ''}" data-action="shutdown" data-vm="${
+                        vm.id
+                      }" ${isAdmin ? '' : 'disabled'}>Shutdown</button>
+                    </div>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
+      </div>
+
+      <aside class="admin-sidebar">
+        <section class="section admin-feed">
+          <div class="section-header">
+            <h2>Incident Feed</h2>
+            <span>ล่าสุด 3 รายการ</span>
+          </div>
+          <ul class="feed-list">
+            ${operationsFeed
+              .map(
+                (item) => `
+                  <li class="feed-item">
+                    <div class="feed-item__time">${item.time}</div>
+                    <div class="feed-item__content">
+                      <strong>${item.event}</strong>
+                      <span>${item.detail}</span>
+                    </div>
+                  </li>
+                `
+              )
+              .join('')}
+          </ul>
+        </section>
+
+        <section class="section admin-playbook">
+          <div class="section-header">
+            <h2>Quick Playbook</h2>
+            <span>ขั้นตอนแนะนำก่อนรอบถัดไป</span>
+          </div>
+          <ol class="playbook-list">
+            ${playbook.map((step) => `<li>${step}</li>`).join('')}
+          </ol>
+        </section>
+      </aside>
     </section>
   `;
 
   const select = document.getElementById('mode-select');
-  select.addEventListener('change', (event) => {
-    state.mode = event.target.value;
-    renderToast(`เปลี่ยนโหมดการแข่งขันเป็น ${modeDescriptions[state.mode].name}`);
-    const competitionButton = document.querySelector('[data-route="competition"]');
-    if (competitionButton?.classList.contains('active')) {
-      renderCompetition();
-    }
-  });
+  if (select) {
+    select.addEventListener('change', (event) => {
+      state.mode = event.target.value;
+      renderToast(`เปลี่ยนโหมดการแข่งขันเป็น ${modeDescriptions[state.mode].name}`);
+      if (currentRoute === 'competition') {
+        renderCompetition();
+      }
+    });
+  }
 
   appRoot.querySelectorAll('.vm-actions .button').forEach((button) => {
+    if (button.hasAttribute('disabled')) return;
     button.addEventListener('click', () => {
       const vmId = button.dataset.vm;
       const action = button.dataset.action;
       renderToast(`${actionLabel(action)} ${vmId} เรียบร้อย`);
     });
   });
+
+  appRoot.querySelectorAll('.command-hero__actions .button').forEach((button) => {
+    if (button.classList.contains('disabled')) {
+      button.addEventListener('click', () => {
+        renderToast('ต้องใช้สิทธิ์ผู้ดูแลระบบ');
+      });
+      return;
+    }
+    button.addEventListener('click', () => {
+      const { action } = button.dataset;
+      if (action === 'broadcast') {
+        renderToast('ส่งประกาศไปยังทุกทีมแล้ว');
+      } else if (action === 'timeline') {
+        renderToast('เปิดบันทึกเหตุการณ์ล่าสุด');
+      }
+    });
+  });
 }
-
 function renderCompetition() {
+  const persona = personaProfiles[state.userRole];
+  const isAdmin = state.userRole === 'admin';
   const mode = modeDescriptions[state.mode];
-  appRoot.innerHTML = `
-    <section class="view-container">
-      <section class="section mode-banner">
-        <h2>${mode.name}</h2>
-        <p>${mode.summary}</p>
-        <div class="badge">Focus: ${mode.focus.join(' • ')}</div>
-      </section>
+  const sortedTeams = [...state.teams].sort((a, b) => b.total - a.total);
+  const leader = sortedTeams[0];
+  const userTeam = isAdmin ? sortedTeams[0] : state.teams[1] || sortedTeams[0];
+  const userRank = sortedTeams.findIndex((team) => team.name === userTeam.name) + 1;
+  const leaderGap = Math.max(leader.total - userTeam.total, 0);
 
-      <section class="section">
-        <div class="section-header">
-          <h2>ตารางคะแนนสด</h2>
-          <span>ซิงก์กับข้อมูลจาก Admin Console</span>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ทีม</th>
-                <th>รวม</th>
-                <th>Attack</th>
-                <th>Defense</th>
-                <th>Service</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.teams
+  const heroStats = isAdmin
+    ? [
+        { label: 'ผู้นำกระดาน', value: leader.name, meta: `${leader.total.toLocaleString('th-TH')} pts` },
+        {
+          label: 'ช่องว่างอันดับ 1-2',
+          value: `${(sortedTeams[0].total - (sortedTeams[1]?.total ?? sortedTeams[0].total)).toLocaleString('th-TH')} pts`,
+          meta: `${sortedTeams[1]?.name ?? leader.name} กำลังไล่ตาม`,
+        },
+        { label: 'โหมดปัจจุบัน', value: mode.name, meta: mode.focus[0] },
+        { label: 'อัปเดตล่าสุด', value: new Date().toLocaleTimeString('th-TH'), meta: 'ข้อมูลสตรีมสด' },
+      ]
+    : [
+        { label: 'ทีมของคุณ', value: userTeam.name, meta: `อันดับที่ ${userRank}` },
+        { label: 'คะแนนที่ต้องไล่', value: `${leaderGap.toLocaleString('th-TH')} pts`, meta: `ถึง ${leader.name}` },
+        { label: 'การส่ง Flag ล่าสุด', value: '2 นาทีที่แล้ว', meta: 'คิวตอบกลับทันที' },
+        { label: 'โหมดปัจจุบัน', value: mode.name, meta: mode.focus[0] },
+      ];
+
+  const heroActions = isAdmin
+    ? [
+        { id: 'pause', label: 'Pause การแข่ง 5 นาที', style: 'primary' },
+        { id: 'refresh', label: 'รีเฟรชกระดานคะแนน', style: 'ghost' },
+      ]
+    : [
+        { id: 'submit', label: 'ส่ง Flag ล่าสุด', style: 'primary' },
+        { id: 'briefing', label: 'เปิดคำแนะนำโหมด', style: 'ghost' },
+      ];
+
+  const callouts = isAdmin
+    ? [
+        { title: 'ตรวจสอบ Submission Queue', detail: 'Review 3 รายการที่รอตรวจสอบก่อนประกาศรอบต่อไป', tag: 'เร่งด่วน' },
+        { title: 'สถานะ VM เป้าหมาย', detail: `${state.vms.filter((vm) => !vm.online).length} VM ต้องการการตรวจสอบเพิ่มเติม`, tag: 'infra' },
+        { title: 'การสื่อสารทีม', detail: 'มี 2 ข้อความใหม่ในแชแนล Broadcast', tag: 'comms' },
+      ]
+    : [
+        { title: 'กลยุทธ์ถัดไป', detail: 'โฟกัสโจทย์ Web & Crypto เพื่อเก็บแต้มเร็ว', tag: 'แผนการบุก' },
+        { title: 'การป้องกัน', detail: 'ทีม Blue Hydra ต้องรักษา service uptime 99%', tag: 'ป้องกัน' },
+        { title: 'สื่อสารกับทีม', detail: 'มี stand-up ใน Discord ภายใน 5 นาที', tag: 'team sync' },
+      ];
+
+  const timeline = isAdmin
+    ? [
+        { time: '13:12', title: 'Flag Review', detail: 'Red Falcon ส่ง flag หมวด Crypto', type: 'positive' },
+        { time: '13:08', title: 'Service Alert', detail: 'Service web03 downtime 90 วินาที', type: 'warning' },
+        { time: '13:05', title: 'Broadcast', detail: 'แจ้งเตือนเรื่อง scope SQL Injection', type: 'neutral' },
+      ]
+    : [
+        { time: '13:11', title: 'Flag Accepted', detail: 'โจทย์ Binary-200 ผ่านการตรวจ', type: 'positive' },
+        { time: '13:06', title: 'Defense Alert', detail: 'พบทราฟฟิกผิดปกติจาก Red Falcon', type: 'warning' },
+        { time: '13:00', title: 'Coach Update', detail: 'Staff แชร์ hint สำหรับหมวด Forensics', type: 'neutral' },
+      ];
+
+  appRoot.innerHTML = `
+    <section class="competition-dashboard">
+      <div class="competition-main">
+        <section class="section competition-hero">
+          <div class="competition-hero__copy">
+            <span class="persona-pill">${persona.badge}</span>
+            <h2>${persona.competitionHero.title}</h2>
+            <p>${persona.competitionHero.message}</p>
+            <div class="competition-hero__meta">
+              <span class="badge">โหมด: ${mode.name}</span>
+              <span class="badge">${mode.focus[1] || mode.focus[0]}</span>
+            </div>
+            <div class="competition-hero__actions">
+              ${heroActions
                 .map(
-                  (team) => `
-                    <tr>
-                      <td>${team.name}</td>
-                      <td>${team.total.toLocaleString('th-TH')}</td>
-                      <td>${team.attack.toLocaleString('th-TH')}</td>
-                      <td>${team.defense.toLocaleString('th-TH')}</td>
-                      <td>${team.service.toLocaleString('th-TH')}</td>
-                    </tr>
+                  (action) => `
+                    <button class="button ${action.style}" data-competition-action="${action.id}">
+                      ${action.label}
+                    </button>
                   `
                 )
                 .join('')}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+          </div>
+          <div class="competition-hero__stats">
+            ${heroStats
+              .map(
+                (stat) => `
+                  <article class="stat-card">
+                    <span class="stat-card__label">${stat.label}</span>
+                    <strong class="stat-card__value">${stat.value}</strong>
+                    <span class="stat-card__meta">${stat.meta}</span>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
 
-      <section class="section">
-        <div class="section-header">
-          <h2>สถานการณ์ปัจจุบัน</h2>
-          <span>อัปเดตตามโหมดที่เลือก</span>
-        </div>
-        <div class="challenge-grid">
-          ${state.teams
-            .map(
-              (team) => `
-                <article class="challenge-card">
-                  <h3>${team.name}</h3>
-                  <span>สถานะ ${mode.name}</span>
-                  <p>${generateScenario(team)}</p>
-                </article>
-              `
-            )
-            .join('')}
-        </div>
-      </section>
+        <section class="section competition-scoreboard">
+          <div class="section-header">
+            <h2>ตารางคะแนนสด</h2>
+            <span>${isAdmin ? 'ข้อมูลซิงก์จาก Admin Console แบบเรียลไทม์' : 'ไฮไลต์ทีมของคุณบนกระดานคะแนน'}</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="${!isAdmin ? 'table-highlight-self' : ''}">
+              <thead>
+                <tr>
+                  <th>อันดับ</th>
+                  <th>ทีม</th>
+                  <th>รวม</th>
+                  <th>Attack</th>
+                  <th>Defense</th>
+                  <th>Service</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sortedTeams
+                  .map(
+                    (team, index) => `
+                      <tr class="${!isAdmin && team.name === userTeam.name ? 'is-user-team' : ''}">
+                        <td>${index + 1}</td>
+                        <td>${team.name}</td>
+                        <td>${team.total.toLocaleString('th-TH')}</td>
+                        <td>${team.attack.toLocaleString('th-TH')}</td>
+                        <td>${team.defense.toLocaleString('th-TH')}</td>
+                        <td>${team.service.toLocaleString('th-TH')}</td>
+                      </tr>
+                    `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section competition-scenarios">
+          <div class="section-header">
+            <h2>สถานการณ์ปัจจุบัน</h2>
+            <span>อัปเดตตามโหมดที่เลือก</span>
+          </div>
+          <div class="challenge-grid">
+            ${state.teams
+              .map(
+                (team) => `
+                  <article class="challenge-card ${!isAdmin && team.name === userTeam.name ? 'is-user-team' : ''}">
+                    <h3>${team.name}</h3>
+                    <span>โหมด ${mode.name}</span>
+                    <p>${generateScenario(team)}</p>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
+      </div>
+
+      <aside class="competition-sidebar">
+        <section class="section competition-callouts">
+          <div class="section-header">
+            <h2>${isAdmin ? 'สิ่งที่ต้องจับตา' : 'ภารกิจสำคัญของทีม'}</h2>
+            <span>${isAdmin ? 'จัดลำดับสิ่งที่ต้องทำทันที' : 'ให้ทีมโฟกัสสิ่งสำคัญที่สุด'}</span>
+          </div>
+          <ul class="callout-list">
+            ${callouts
+              .map(
+                (item) => `
+                  <li class="callout-card">
+                    <span class="chip">${item.tag}</span>
+                    <strong>${item.title}</strong>
+                    <p>${item.detail}</p>
+                  </li>
+                `
+              )
+              .join('')}
+          </ul>
+        </section>
+
+        <section class="section competition-timeline">
+          <div class="section-header">
+            <h2>กิจกรรมล่าสุด</h2>
+            <span>${isAdmin ? 'Feed จากระบบควบคุม' : 'สิ่งที่มีผลกับทีมคุณ'}</span>
+          </div>
+          <ul class="timeline-list">
+            ${timeline
+              .map(
+                (entry) => `
+                  <li class="timeline-item ${entry.type}">
+                    <div class="timeline-item__time">${entry.time}</div>
+                    <div class="timeline-item__body">
+                      <strong>${entry.title}</strong>
+                      <span>${entry.detail}</span>
+                    </div>
+                  </li>
+                `
+              )
+              .join('')}
+          </ul>
+        </section>
+      </aside>
     </section>
   `;
-}
 
+  appRoot.querySelectorAll('[data-competition-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.competitionAction;
+      switch (action) {
+        case 'pause':
+          renderToast('ประกาศ Pause การแข่งขัน 5 นาทีแล้ว');
+          break;
+        case 'refresh':
+          renderToast('รีเฟรชตารางคะแนนและกระจายข้อมูลแล้ว');
+          break;
+        case 'submit':
+          renderToast('ส่ง Flag ล่าสุดของทีมเรียบร้อย!');
+          break;
+        case 'briefing':
+          renderToast('เปิดคำแนะนำโหมดและ Hint ล่าสุด');
+          break;
+        default:
+          renderToast('ทำรายการแล้ว');
+      }
+    });
+  });
+}
 function renderPracticeLab() {
+  const persona = personaProfiles[state.userRole];
+  const isAdmin = state.userRole === 'admin';
   const { practice } = state;
   const filteredLabs = practice.labs.filter((lab) =>
     practice.activeFilter === 'all' ? true : lab.category === practice.activeFilter
   );
+  const primaryPracticeLabel = isAdmin ? 'ตรวจสอบความคืบหน้าทีม' : 'ดำเนินการต่อ Lab ล่าสุด';
+  const secondaryPracticeLabel = isAdmin ? 'เปิดแดชบอร์ดรวม' : 'ดูสรุปการเรียนรู้';
+  const practiceSubtext = isAdmin
+    ? 'กำลังตรวจสอบข้อมูลการฝึกของทุกทีมแบบเรียลไทม์'
+    : 'ซิงก์ความคืบหน้าการฝึกของทีมคุณแบบส่วนตัว';
 
   appRoot.innerHTML = `
     <section class="practice-dashboard">
@@ -408,16 +764,18 @@ function renderPracticeLab() {
         <section class="section practice-hero">
           <div class="practice-hero__content">
             <div class="practice-hero__copy">
+              <span class="persona-pill">${persona.practiceBadge}</span>
               <h2>Practice Lab Command Center</h2>
               <p>
                 กำหนดจังหวะการฝึก ฝึกซ้อมแบบโฟกัส และติดตามพัฒนาการแบบเรียลไทม์
                 ทั้ง Offensive, Defensive และ Forensics ในที่เดียว
               </p>
+              <span class="practice-hero__subtext">${practiceSubtext}</span>
               <div class="practice-hero__actions">
                 <button class="button primary" data-action="resume" data-label="Advanced Exploit Development">
-                  ดำเนินการต่อ Lab ล่าสุด
+                  ${primaryPracticeLabel}
                 </button>
-                <button class="button ghost" data-action="overview">ดูสรุปการเรียนรู้</button>
+                <button class="button ghost" data-action="overview">${secondaryPracticeLabel}</button>
               </div>
             </div>
             <div class="practice-hero__stats">
@@ -624,9 +982,17 @@ function renderPracticeLab() {
     button.addEventListener('click', () => {
       const { action, label } = button.dataset;
       if (action === 'resume') {
-        renderToast(`กลับเข้าสู่ ${label}`);
+        renderToast(
+          state.userRole === 'admin'
+            ? 'เปิดดูความคืบหน้าของทีมทั้งหมด'
+            : `กลับเข้าสู่ ${label}`
+        );
       } else if (action === 'overview') {
-        renderToast('เปิดภาพรวมเส้นทางการฝึก');
+        renderToast(
+          state.userRole === 'admin'
+            ? 'เปิดแดชบอร์ดภาพรวมของผู้ฝึกทั้งหมด'
+            : 'เปิดภาพรวมเส้นทางการฝึก'
+        );
       }
     });
   });

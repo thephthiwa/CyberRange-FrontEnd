@@ -21,5 +21,9 @@ await api.post(`/vms/${vmId}/action`, { action })
 ).data;
 
 // ---- Labs
+export const login = async (credentials: { email: string; password: string }) => (
+  await api.post('/auth/login', credentials)
+).data as { token: string; user: { name: string; rank: string; role: string; unit: string; email: string } };
+
 export const fetchLabs = async () => (await api.get('/labs')).data;
 export const fetchLabVMs = async (labId: string) => (await api.get(`/labs/${labId}/vms`)).data;

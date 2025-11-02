@@ -1,0 +1,35 @@
+# .codex.yml
+project:
+  name: RTAF Cyber Range FrontEnd
+  language: typescript
+  packageManager: npm
+
+run:
+  dev: "npm run dev"
+  build: "npm run build"
+  test: "npm test || echo 'no tests yet'"
+
+paths:
+  allowEdit:
+    - "src/**/*.ts"
+    - "src/**/*.tsx"
+    - "src/**/*.css"
+    - "vite.config.ts"
+    - "tsconfig.json"
+  readOnly:
+    - "node_modules/**"
+    - "dist/**"
+
+git:
+  baseBranch: "main"
+  commitMessage: "chore(codex): apply changes"
+  pr:
+    title: "Codex update"
+    body: "Automated changes by Codex"
+    labels: ["codex"]
+
+env:
+  required:
+    - "VITE_API_BASE_URL"
+  devDefaults:
+    VITE_API_BASE_URL: "http://localhost:8000/api/v1"

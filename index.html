@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="en">
   <head>
@@ -8,5 +9,39 @@
   <body class="bg-rtaf-bg1 text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+=======
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberRange Control Center</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__top">
+        <h1>CyberRange Control Center</h1>
+        <div class="persona-switch" role="group" aria-label="เลือกมุมมองผู้ใช้">
+          <span class="persona-switch__label">จำลองผู้ใช้:</span>
+          <button data-persona="admin" class="persona-button active">Admin</button>
+          <button data-persona="competitor" class="persona-button">ผู้เข้าแข่งขัน</button>
+        </div>
+      </div>
+      <nav class="app-nav">
+        <button data-route="admin" class="nav-button active">Admin Console</button>
+        <button data-route="competition" class="nav-button">ระบบแข่ง</button>
+        <button data-route="practice" class="nav-button">Practice Lab</button>
+      </nav>
+    </header>
+
+    <main id="app"></main>
+
+    <footer class="app-footer">
+      <p>CyberRange Platform &copy; 2024</p>
+    </footer>
+
+    <script src="scripts/app.js" type="module"></script>
+>>>>>>> origin/codex/conduct-code-review
   </body>
 </html>

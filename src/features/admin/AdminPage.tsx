@@ -3,7 +3,41 @@ import Card from '@components/ui/Card';
 import PageTitle from '@components/ui/PageTitle';
 import { useAuth } from '@features/auth/AuthContext';
 import { fetchAdminState, fetchScoreOverview, fetchVMs, setAdminMode, vmAction } from '@lib/api';
+
 import type { Mode, VM } from '@lib/types';
+
+const incidentDeck = [
+  {
+    id: 'INC-204',
+    title: 'Flag Replay Attempt',
+    state: 'mitigated',
+    severity: 'medium',
+    detail: 'ระบบป้องกันจับ Flag ที่ส่งซ้ำจาก IP 10.21.4.33 และบล็อกการเชื่อมต่อ',
+    symbol: '🛡️'
+  },
+  {
+    id: 'INC-219',
+    title: 'บริการ DNS ล่ม (ทีม Hawk)',
+    state: 'active',
+    severity: 'high',
+    detail: 'Service checker รายงาน Timeout ติดต่อกัน 4 รอบ',
+    symbol: '🚨'
+  },
+  {
+    id: 'INC-225',
+    title: 'คำขอรีเซ็ต VM',
+    state: 'queued',
+    severity: 'low',
+    detail: 'ทีม Raven ร้องขอรีเซ็ต Snapshot ล่าสุด',
+    symbol: '📋'
+  }
+];
+
+const auditLog = [
+  { ts: '16:22:01', actor: 'Admin-01', action: 'Switch competition mode -> Jeopardy', tone: 'text-rtaf-cyan' },
+  { ts: '16:18:44', actor: 'SOC-Automation', action: 'สั่ง Snapshot VM-Falcon-02', tone: 'text-emerald-300' },
+  { ts: '16:10:27', actor: 'Admin-02', action: 'Broadcast Advisory ถึงทุกทีม', tone: 'text-white/70' }
+];
 
 export default function AdminPage() {
   const { persona, switchPersona } = useAuth();
@@ -11,24 +45,23 @@ export default function AdminPage() {
   if (persona !== 'admin') {
     return (
       <div className="space-y-6">
-        <PageTitle>Command Console</PageTitle>
+        <PageTitle subtitle="Access Control">Command Console</PageTitle>
         <Card
-          title="Restricted Area"
+          title="Restricted Sector"
           actions={
             <button
               onClick={() => switchPersona('admin')}
               className="rounded-full border border-rtaf-cyan/60 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-rtaf-cyan transition hover:border-rtaf-cyan hover:text-white"
             >
-              Switch to Admin Mode
+              Elevate to Admin
             </button>
           }
         >
           <p>
-            คุณกำลังใช้งานในโหมด Operator ซึ่งไม่มีสิทธิเข้าถึง Command Console. สลับไปยังโหมด Admin เพื่อจัดการการแข่งขันและระบบ VM
-            ทั้งหมด.
+            พื้นที่นี้สงวนสำหรับเจ้าหน้าที่ Command เท่านั้น ระบบจะบันทึกทุกความพยายามเข้าถึงใน Audit Log โดยอัตโนมัติ.
           </p>
           <p className="mt-3 text-xs uppercase tracking-[0.3em] text-white/50">
-            Audit log: ป้องกันการเข้าใช้งานโดยไม่ได้รับอนุญาต
+            SOC Notice: แจ้งเตือนหากพบการพยายามเข้าสู่โหมด Admin ซ้ำภายใน 5 นาที
           </p>
         </Card>
       </div>
@@ -37,12 +70,21 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <PageTitle>Command Console</PageTitle>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ScoreOverviewCard />
-        <ModeSwitcherCard />
+      <PageTitle subtitle="Admin Ops">Command Console</PageTitle>
+      <div className="grid gap-6 2xl:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ScoreOverviewCard />
+            <ModeSwitcherCard />
+          </div>
+          <VMControlCard />
+        </div>
+        <div className="space-y-6">
+          <IncidentDeckCard />
+          <AuditLogCard />
+          <SystemsPulseCard />
+        </div>
       </div>
-      <VMControlCard />
     </div>
   );
 }
@@ -204,5 +246,78 @@ function VMActionButton({ label, tone, onClick }: VMActionButtonProps) {
     >
       {label}
     </button>
+  );
+}
+
+function IncidentDeckCard() {
+  const toneBySeverity: Record<string, string> = {
+    high: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
+    medium: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
+    low: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+  };
+
+  return (
+    <Card title="Incident Queue" actions={<span className="text-xs uppercase tracking-[0.3em] text-white/60">Live sync</span>}>
+      <ul className="space-y-3 text-sm">
+        {incidentDeck.map((incident) => (
+          <li key={incident.id} className="rounded-2xl border border-white/10 bg-black/40 p-4">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+              <span>{incident.id}</span>
+              <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] ${toneBySeverity[incident.severity]}`}>
+                <span className="text-sm">{incident.symbol}</span>
+                {incident.state.toUpperCase()}
+              </span>
+            </div>
+            <div className="mt-2 text-white">{incident.title}</div>
+            <div className="mt-1 text-white/70">{incident.detail}</div>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+function AuditLogCard() {
+  return (
+    <Card title="Audit Timeline" actions={<span className="text-xs uppercase tracking-[0.3em] text-white/60">UTC+7</span>}>
+      <ul className="space-y-3 text-sm">
+        {auditLog.map((entry) => (
+          <li key={`${entry.ts}-${entry.actor}`} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-lg">⏱️</div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+                <span>{entry.actor}</span>
+                <span>{entry.ts}</span>
+              </div>
+              <div className={`mt-2 text-white ${entry.tone}`}>{entry.action}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+function SystemsPulseCard() {
+  const signals = [
+    { label: 'Range Broadcast', status: 'Nominal', symbol: '📡', tone: 'text-emerald-300' },
+    { label: 'SOC Alert Channel', status: '1 Active (High)', symbol: '⚠️', tone: 'text-amber-300' },
+    { label: 'Automation Queue', status: '3 pending tasks', symbol: '✅', tone: 'text-rtaf-cyan' }
+  ];
+
+  return (
+    <Card title="Systems Pulse" subtle>
+      <div className="space-y-3 text-sm text-white/80">
+        {signals.map((signal) => (
+          <div key={signal.label} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full border border-white/10 bg-white/5 p-2 text-lg">{signal.symbol}</div>
+              <span className="text-white">{signal.label}</span>
+            </div>
+            <span className={`text-sm font-medium ${signal.tone}`}>{signal.status}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

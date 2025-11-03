@@ -32,4 +32,6 @@ const router = createBrowserRouter([
   { path: '*', element: <Navigate to="/" replace /> }
 ]);
 
-export function AppRouter() { return <RouterProvider router={router} />; }
+export function AppRouter() {
+  return <RouterProvider router={router} />;
+}

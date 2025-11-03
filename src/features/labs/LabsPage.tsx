@@ -29,8 +29,8 @@ export default function LabsPage() {
 
   return (
     <div className="space-y-10 pb-12">
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8">
-        <div className="absolute inset-y-0 right-0 hidden w-1/2 rounded-l-[3rem] bg-gradient-to-br from-rtaf-cyan/20 via-transparent to-transparent blur-3xl md:block" />
+      <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/15 via-[#03203f] to-[#020b1a] p-8 shadow-[0_30px_60px_rgba(3,15,35,0.5)]">
+        <div className="absolute inset-y-0 right-0 hidden w-1/2 rounded-l-[3rem] bg-gradient-to-br from-rtaf-cyan/40 via-transparent to-transparent blur-3xl md:block" />
         <div className="relative grid gap-10 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
@@ -123,9 +123,9 @@ function LabCard({ lab }: LabCardProps) {
   };
 
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent p-6">
-      <div className="absolute right-16 top-0 h-56 w-56 rounded-full bg-rtaf-cyan/20 blur-3xl" />
-      <div className="absolute -left-20 bottom-0 h-64 w-64 rounded-full bg-[#122c4a]/70 blur-3xl" />
+    <article className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-[#051c37]/70 to-transparent p-6 shadow-[0_20px_40px_rgba(0,0,0,0.45)]">
+      <div className="absolute right-16 top-0 h-56 w-56 rounded-full bg-rtaf-cyan/25 blur-3xl" />
+      <div className="absolute -left-20 bottom-0 h-64 w-64 rounded-full bg-[#122c4a]/80 blur-3xl" />
       <div className="relative space-y-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
@@ -165,7 +165,7 @@ function LabCard({ lab }: LabCardProps) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
             <div className="text-xs uppercase tracking-widest text-white/40">Mission Objectives</div>
             <ul className="mt-3 space-y-2 text-sm text-white/75">
               {lab.objectives.map((objective) => (
@@ -176,7 +176,7 @@ function LabCard({ lab }: LabCardProps) {
               ))}
             </ul>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
             <div className="text-xs uppercase tracking-widest text-white/40">Range Environment</div>
             <dl className="mt-3 space-y-3 text-sm text-white/75">
               <div className="flex justify-between">
@@ -195,7 +195,7 @@ function LabCard({ lab }: LabCardProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-black/50 via-black/40 to-black/20 p-5">
           <div className="flex items-center justify-between text-xs uppercase tracking-widest text-white/40">
             <span>Active Assets</span>
             <span>Real-time status feed</span>

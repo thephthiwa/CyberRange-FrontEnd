@@ -3,6 +3,6 @@
 :root { color-scheme: dark; }
 
 body {
-  background: radial-gradient(1200px 600px at 20% -10%, #00264d 0%, #001529 40%, #001120 100%);
+  background: radial-gradient(1200px 600px at 10% -10%, #04294f 0%, #021327 45%, #010912 100%);
   color: white;
 }
